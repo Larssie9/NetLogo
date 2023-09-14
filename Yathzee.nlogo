@@ -1,9 +1,10 @@
 globals [randomnumber
 turtlenumber
-selected-list]
+selected-list
+dummy-list
+for]
 
 to setup
-  set selected-list list (1) (2)
   clear-all
   create-turtles 5
   ask turtles [set shape "die 6"]
@@ -19,9 +20,10 @@ end
 
 to go
   set turtlenumber 0
+  set selected-list [0 11 2 13 14]
   while [turtlenumber <= 4] [
   set randomnumber random 6 + 1
-  if turtlenumber + 1 != selected-list  [
+    (foreach (selected-list) [a -> if turtlenumber != a [
       if randomnumber = 1 [
         ask turtle turtlenumber [set shape "die 1"]
       ]
@@ -40,8 +42,8 @@ to go
       if randomnumber = 6 [
         ask turtle turtlenumber [set shape "die 6"]
       ]
-  ]
-   set turtlenumber turtlenumber + 1
+    ]])
+    set turtlenumber turtlenumber + 1
   ]
   tick
 end
@@ -129,9 +131,9 @@ SWITCH
 73
 781
 106
-Een
-Een
-1
+Een?
+Een?
+0
 1
 -1000
 
