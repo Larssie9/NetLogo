@@ -23,7 +23,7 @@ to go
   set selected-list [0 11 2 13 14]
   while [turtlenumber <= 4] [
   set randomnumber random 6 + 1
-    (foreach (selected-list) [a -> if turtlenumber != a [
+    (foreach (selected-list) [a -> ifelse turtlenumber != a [
       if randomnumber = 1 [
         ask turtle turtlenumber [set shape "die 1"]
       ]
@@ -42,8 +42,7 @@ to go
       if randomnumber = 6 [
         ask turtle turtlenumber [set shape "die 6"]
       ]
-    ]])
-    set turtlenumber turtlenumber + 1
+    set turtlenumber turtlenumber + 1]])
   ]
   tick
 end
