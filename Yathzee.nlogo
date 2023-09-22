@@ -40,8 +40,10 @@ to go
   ifelse Vijf? [set selected-list(replace-item 4 selected-list 13)][set selected-list(replace-item 4 selected-list 3)]
   set turtlenumber 0
   while [turtlenumber <= 4] [
+<<<<<<< HEAD
     (foreach (selected-list) [ a -> ifelse turtlenumber = a  [
      set randomnumber random 6 + 1
+=======
       if randomnumber = 1 [
         ask turtle turtlenumber [set shape "die 1"]
         if turtlenumber = 0 [
@@ -150,8 +152,10 @@ to go
           set OgenVijf randomnumber
         ]
       ]
+<<<<<<< HEAD
       set turtlenumber turtlenumber + 1
       ][if a = 3 [set turtlenumber turtlenumber + 1] if a = 13 [set turtlenumber turtlenumber + 1]]])
+=======
   ]
   tick
 end
