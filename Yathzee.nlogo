@@ -2,9 +2,22 @@ globals [randomnumber
 turtlenumber
 selected-list
 dummy-list
-for]
+for
+PuntEen
+PuntTwee
+PuntDrie
+PuntVier
+PuntVijf
+PuntZes
+PuntTotaal
+OgenEen
+OgenTwee
+OgenDrie
+OgenVier
+OgenVijf]
 
 to setup
+  set turtlenumber 0
   clear-all
   create-turtles 5
   ask turtles [set shape "die 6"]
@@ -19,33 +32,138 @@ to setup
 end
 
 to go
+  set selected-list [0 1 2 3 4]
+  ifelse Een? [set selected-list(replace-item 0 selected-list 10)][set selected-list(replace-item 0 selected-list 0)]
+  ifelse Twee? [set selected-list(replace-item 1 selected-list 11)][set selected-list(replace-item 1 selected-list 1)]
+  ifelse Drie? [set selected-list(replace-item 2 selected-list 12)][set selected-list(replace-item 2 selected-list 2)]
+  ifelse Vier? [set selected-list(replace-item 3 selected-list 14)][set selected-list(replace-item 3 selected-list 4)]
+  ifelse Vijf? [set selected-list(replace-item 4 selected-list 13)][set selected-list(replace-item 4 selected-list 3)]
   set turtlenumber 0
-  set selected-list [0 11 2 13 14]
   while [turtlenumber <= 4] [
-  set randomnumber random 6 + 1
-    (foreach (selected-list) [a -> if turtlenumber != a [
+    (foreach (selected-list) [ a -> ifelse turtlenumber = a  [
+     set randomnumber random 6 + 1
       if randomnumber = 1 [
         ask turtle turtlenumber [set shape "die 1"]
+        if turtlenumber = 0 [
+          set OgenEen randomnumber
+        ]
+        if turtlenumber = 1 [
+          set OgenTwee randomnumber
+        ]
+        if turtlenumber = 2 [
+          set OgenDrie randomnumber
+        ]
+        if turtlenumber = 3 [
+          set OgenVier randomnumber
+        ]
+        if turtlenumber = 4 [
+          set OgenVijf randomnumber
+        ]
       ]
       if randomnumber = 2 [
         ask turtle turtlenumber [set shape "die 2"]
+        if turtlenumber = 0 [
+          set OgenEen randomnumber
+        ]
+        if turtlenumber = 1 [
+          set OgenTwee randomnumber
+        ]
+        if turtlenumber = 2 [
+          set OgenDrie randomnumber
+        ]
+        if turtlenumber = 3 [
+          set OgenVier randomnumber
+        ]
+        if turtlenumber = 4 [
+          set OgenVijf randomnumber
+        ]
       ]
       if randomnumber = 3 [
         ask turtle turtlenumber [set shape "die 3"]
+        if turtlenumber = 0 [
+          set OgenEen randomnumber
+        ]
+        if turtlenumber = 1 [
+          set OgenTwee randomnumber
+        ]
+        if turtlenumber = 2 [
+          set OgenDrie randomnumber
+        ]
+        if turtlenumber = 3 [
+          set OgenVier randomnumber
+        ]
+        if turtlenumber = 4 [
+          set OgenVijf randomnumber
+        ]
       ]
       if randomnumber = 4 [
         ask turtle turtlenumber [set shape "die 4"]
+        if turtlenumber = 0 [
+          set OgenEen randomnumber
+        ]
+        if turtlenumber = 1 [
+          set OgenTwee randomnumber
+        ]
+        if turtlenumber = 2 [
+          set OgenDrie randomnumber
+        ]
+        if turtlenumber = 3 [
+          set OgenVier randomnumber
+        ]
+        if turtlenumber = 4 [
+          set OgenVijf randomnumber
+        ]
       ]
       if randomnumber = 5 [
         ask turtle turtlenumber [set shape "die 5"]
+        if turtlenumber = 0 [
+          set OgenEen randomnumber
+        ]
+        if turtlenumber = 1 [
+          set OgenTwee randomnumber
+        ]
+        if turtlenumber = 2 [
+          set OgenDrie randomnumber
+        ]
+        if turtlenumber = 3 [
+          set OgenVier randomnumber
+        ]
+        if turtlenumber = 4 [
+          set OgenVijf randomnumber
+        ]
       ]
       if randomnumber = 6 [
         ask turtle turtlenumber [set shape "die 6"]
+        if turtlenumber = 0 [
+          set OgenEen randomnumber
+        ]
+        if turtlenumber = 1 [
+          set OgenTwee randomnumber
+        ]
+        if turtlenumber = 2 [
+          set OgenDrie randomnumber
+        ]
+        if turtlenumber = 3 [
+          set OgenVier randomnumber
+        ]
+        if turtlenumber = 4 [
+          set OgenVijf randomnumber
+        ]
       ]
-    ]])
-    set turtlenumber turtlenumber + 1
+      set turtlenumber turtlenumber + 1
+      ][if a = 3 [set turtlenumber turtlenumber + 1] if a = 13 [set turtlenumber turtlenumber + 1]]])
   ]
   tick
+end
+
+to herbereken
+  set PuntEen AantalEen
+  set PuntTwee AantalTwee * 2
+  set PuntDrie AantalDrie * 3
+  set PuntVier AantalVier * 4
+  set PuntVijf AantalVijf * 5
+  set PuntZes AantalZes * 6
+  set PuntTotaal PuntEen + PuntTwee + PuntDrie + PuntVier + PuntVijf + PuntZes
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -133,7 +251,7 @@ SWITCH
 106
 Een?
 Een?
-0
+1
 1
 -1000
 
@@ -142,8 +260,8 @@ SWITCH
 73
 884
 106
-Twee
-Twee
+Twee?
+Twee?
 1
 1
 -1000
@@ -153,8 +271,8 @@ SWITCH
 73
 987
 106
-Drie
-Drie
+Drie?
+Drie?
 1
 1
 -1000
@@ -164,8 +282,8 @@ SWITCH
 106
 836
 139
-Vier
-Vier
+Vier?
+Vier?
 1
 1
 -1000
@@ -175,8 +293,8 @@ SWITCH
 106
 939
 139
-Vijf
-Vijf
+Vijf?
+Vijf?
 1
 1
 -1000
@@ -190,6 +308,208 @@ Dobbelsteen bewaren
 11
 0.0
 1
+
+SLIDER
+677
+139
+849
+172
+AantalEen
+AantalEen
+0
+5
+0.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+678
+182
+850
+215
+AantalTwee
+AantalTwee
+0
+5
+0.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+679
+227
+851
+260
+AantalDrie
+AantalDrie
+0
+5
+0.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+679
+271
+851
+304
+AantalVier
+AantalVier
+0
+5
+0.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+678
+315
+850
+348
+AantalVijf
+AantalVijf
+0
+5
+0.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+678
+358
+850
+391
+AantalZes
+AantalZes
+0
+5
+0.0
+1
+1
+NIL
+HORIZONTAL
+
+MONITOR
+848
+139
+934
+184
+Een
+PuntEen
+17
+1
+11
+
+MONITOR
+848
+183
+934
+228
+Twee
+PuntTwee
+17
+1
+11
+
+MONITOR
+849
+227
+934
+272
+Drie
+PuntDrie
+17
+1
+11
+
+MONITOR
+849
+271
+934
+316
+Vier
+PuntVier
+17
+1
+11
+
+MONITOR
+848
+315
+934
+360
+Vijf
+PuntVijf
+17
+1
+11
+
+MONITOR
+848
+358
+934
+403
+Zes
+PuntZes
+17
+1
+11
+
+MONITOR
+848
+402
+934
+447
+Totaal
+PuntTotaal
+17
+1
+11
+
+BUTTON
+678
+402
+849
+435
+Punten Berekenen
+Herbereken
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+PLOT
+987
+73
+1582
+223
+Gemiddeld aantal ogen
+Afgelopen 30x gerold
+Rol
+0.0
+50.0
+0.0
+6.0
+true
+false
+"" ""
+PENS
+"Gemiddeld" 1.0 0 -2674135 true "" "plot (OgenEen + OgenTwee + OgenDrie + OgenVier + OgenVijf) / 5"
 
 @#$#@#$#@
 ## WHAT IS IT?
