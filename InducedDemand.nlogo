@@ -1,6 +1,10 @@
+
+
 globals [
   selected-car   ; the currently selected car
   lanes          ; a list of the y coordinates of different lanes
+  buscount
+  busturtle
 ]
 
 turtles-own [
@@ -16,7 +20,8 @@ to setup
   draw-road
   create-or-remove-cars
   set selected-car one-of turtles
-  ask selected-car [ set color red ]
+  set busturtle one-of turtles
+  ask selected-car [ set color green ]
   reset-ticks
 end
 
@@ -26,6 +31,21 @@ to create-or-remove-cars
   let road-patches patches with [ member? pycor lanes ]
   if number-of-cars > count road-patches [
     set number-of-cars count road-patches
+  ]
+  if buscount = 60 [
+    create-turtles (1) [
+      set color yellow
+     setxy 0 last lanes - 2
+      set target-lane last lanes - 2
+      set heading 90
+      set top-speed 0.5 + random-float 0.5
+      set speed 0.5
+      let buslane last lanes - 2
+      set busturtle one-of turtles-on patch 0 buslane
+      ask busturtle [set shape "bus"]
+      ask busturtle [set size 2]
+      set buscount 0
+    ]
   ]
 
   create-turtles (number-of-cars - count turtles) [
@@ -104,6 +124,7 @@ to go
   ask turtles [ move-forward ]
   ask turtles with [ patience <= 0 ] [ choose-new-lane ]
   ask turtles with [ ycor != target-lane ] [ move-to-target-lane ]
+  set buscount buscount + 1
   tick
 end
 
@@ -482,6 +503,25 @@ Circle -7500403 true true 110 127 80
 Circle -7500403 true true 110 75 80
 Line -7500403 true 150 100 80 30
 Line -7500403 true 150 100 220 30
+
+bus
+false
+0
+Polygon -7500403 true true 15 206 15 150 15 120 30 105 270 105 285 120 285 135 285 206 270 210 30 210
+Rectangle -16777216 true false 36 126 231 159
+Line -7500403 false 60 135 60 165
+Line -7500403 false 60 120 60 165
+Line -7500403 false 90 120 90 165
+Line -7500403 false 120 120 120 165
+Line -7500403 false 150 120 150 165
+Line -7500403 false 180 120 180 165
+Line -7500403 false 210 120 210 165
+Line -7500403 false 240 135 240 165
+Rectangle -16777216 true false 15 174 285 182
+Circle -16777216 true false 48 187 42
+Rectangle -16777216 true false 240 127 276 205
+Circle -16777216 true false 195 187 42
+Line -7500403 false 257 120 257 207
 
 butterfly
 true

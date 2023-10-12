@@ -1,209 +1,103 @@
 globals [
-  selected-car   ; the currently selected car
-  lanes          ; a list of the y coordinates of different lanes
+  fastpass-color
+  even
+  uneven
+  kans-standby
+  random-standby
 ]
-
 turtles-own [
-  speed         ; the current speed of the car
-  top-speed     ; the maximum speed of the car (different for all cars)
-  target-lane   ; the desired lane of the car
-  patience      ; the driver's current level of patience
+ i
+ speed
+  rij
 ]
 
 to setup
   clear-all
-  set-default-shape turtles "car"
-  draw-road
-  create-or-remove-cars
-  set selected-car one-of turtles
-  ask selected-car [ set color red ]
+  set fastpass-color (list -19 -18 -17 -16 -15)
+  ask patches [set pcolor brown + random-float 0.25]
+  foreach fastpass-color [ n -> ask patches with [pycor = n] [set pcolor red + random-float 0.25]]
+  let y -14.5
+  while [y < 20] [
+    create-turtles 1 [
+      setxy (min-pxcor - 0.5) y
+      hide-turtle
+      set color black
+      set heading 90
+      repeat world-width [
+        pen-down
+        forward 1
+      ]
+      die
+    ]
+    set y y + 5
+  ]
+  set even (list 1 3 5 7 10)
+  set uneven (list 2 4 6 8)
   reset-ticks
 end
 
-to create-or-remove-cars
-
-  ; make sure we don't have too many cars for the room we have on the road
-  let road-patches patches with [ member? pycor lanes ]
-  if number-of-cars > count road-patches [
-    set number-of-cars count road-patches
-  ]
-
-  create-turtles (number-of-cars - count turtles) [
-    set color car-color
-    move-to one-of free road-patches
-    set target-lane pycor
-    set heading 90
-    set top-speed 0.5 + random-float 0.5
-    set speed 0.5
-    set patience random max-patience
-  ]
-
-  if count turtles > number-of-cars [
-    let n count turtles - number-of-cars
-    ask n-of n [ other turtles ] of selected-car [ die ]
-  ]
-
-end
-
-to-report free [ road-patches ] ; turtle procedure
-  let this-car self
-  report road-patches with [
-    not any? turtles-here with [ self != this-car ]
-  ]
-end
-
-to draw-road
-  ask patches [
-    ; the road is surrounded by green grass of varying shades
-    set pcolor green - random-float 0.5
-  ]
-  set lanes n-values number-of-lanes [ n -> number-of-lanes - (n * 2) - 1 ]
-  ask patches with [ abs pycor <= number-of-lanes ] [
-    ; the road itself is varying shades of grey
-    set pcolor grey - 2.5 + random-float 0.25
-  ]
-  set lanes but-last lanes
-  draw-road-lines
-end
-
-to draw-road-lines
-  let y (last lanes) - 3; start below the "lowest" lane
-  while [ y <= first lanes + 1 ] [
-    if not member? y lanes [
-      ifelse y = last lanes - 2 [][; draw lines on road patches that are not part of a lane
-      ifelse abs y = number-of-lanes
-        [ draw-line y white 0 ]  ; yellow for the sides of the road
-        [ draw-line y white 0.5 ] ; dashed white between lanes
-      ]
-    ]
-    set y y + 1 ; move up one patch
-  ]
-end
-
-to draw-line [ y line-color gap ]
-  ; We use a temporary turtle to draw the line:
-  ; - with a gap of zero, we get a continuous line;
-  ; - with a gap greater than zero, we get a dasshed line.
-  create-turtles 1 [
-    setxy (min-pxcor - 0.5) y
-    hide-turtle
-    set color line-color
-    set heading 90
-    repeat world-width [
-      pen-up
-      forward gap
-      pen-down
-      forward (1 - gap)
-    ]
-    die
-  ]
-end
-
 to go
-  create-or-remove-cars
-  ask turtles [ move-forward ]
-  ask turtles with [ patience <= 0 ] [ choose-new-lane ]
-  ask turtles with [ ycor != target-lane ] [ move-to-target-lane ]
+  set kans-standby 100 / kans-standby-rij
+  set random-standby random kans-standby
+  if random-standby < 1 [
+  create-turtles 1 [
+    set color green
+    setxy 59 -12
+    set i 1
+    set rij "standby"
+  ]
+  ]
+  foreach even [n ->
+  ask turtles with [i = n] [move-forward1]
+  ]
+  foreach uneven [n ->
+  ask turtles with [i = n] [move-forward2]
+  ]
+  iplus
+  wait 0.1
   tick
 end
 
-to move-forward ; turtle procedure
+to move-forward1
+  set heading -90
+  let blocking-guests other turtles in-cone (1) 180 with [ i = i ]
+  let blocking-guest min-one-of blocking-guests [ distance myself]
+  ifelse blocking-guest != nobody [
+    set speed 0
+  ][set speed 1]
+  forward 1
+end
+
+to move-forward2
   set heading 90
-  speed-up-car ; we tentatively speed up, but might have to slow down
-  let blocking-cars other turtles in-cone (1 + speed) 180 with [ y-distance <= 1 ]
-  let blocking-car min-one-of blocking-cars [ distance myself ]
-  if blocking-car != nobody [
-    ; match the speed of the car ahead of you and then slow
-    ; down so you are driving a bit slower than that car.
-    set speed [ speed ] of blocking-car
-    slow-down-car
-  ]
-  forward speed
+  let blocking-guests other turtles in-cone (1) 180 with [ i = i ]
+  let blocking-guest min-one-of blocking-guests [ distance myself]
+  ifelse blocking-guest != nobody [
+    set speed 0
+  ][set speed 1]
+  forward 1
 end
 
-to slow-down-car ; turtle procedure
-  set speed (speed - deceleration)
-  if speed < 0 [ set speed deceleration ]
-  ; every time you hit the brakes, you loose a little patience
-  set patience patience - 1
-end
-
-to speed-up-car ; turtle procedure
-  set speed (speed + acceleration)
-  if speed > top-speed [ set speed top-speed ]
-end
-
-to choose-new-lane ; turtle procedure
-  ; Choose a new lane among those with the minimum
-  ; distance to your current lane (i.e., your ycor).
-  let other-lanes remove ycor lanes
-  if not empty? other-lanes [
-    let min-dist min map [ y -> abs (y - ycor) ] other-lanes
-    let closest-lanes filter [ y -> abs (y - ycor) = min-dist ] other-lanes
-    set target-lane one-of closest-lanes
-    set patience max-patience
-  ]
-end
-
-to move-to-target-lane ; turtle procedure
-  set heading ifelse-value target-lane < ycor [ 180 ] [ 0 ]
-  let blocking-cars other turtles in-cone (1 + abs (ycor - target-lane)) 180 with [ x-distance <= 1 ]
-  let blocking-car min-one-of blocking-cars [ distance myself ]
-  ifelse blocking-car = nobody [
-    forward 0.2
-    set ycor precision ycor 1 ; to avoid floating point errors
-  ] [
-    ; slow down if the car blocking us is behind, otherwise speed up
-    ifelse towards blocking-car <= 180 [ slow-down-car ] [ speed-up-car ]
-  ]
-end
-
-to-report x-distance
-  report distancexy [ xcor ] of myself ycor
-end
-
-to-report y-distance
-  report distancexy xcor [ ycor ] of myself
-end
-
-to select-car
-  ; allow the user to select a different car by clicking on it with the mouse
-  if mouse-down? [
-    let mx mouse-xcor
-    let my mouse-ycor
-    if any? turtles-on patch mx my [
-      ask selected-car [ set color car-color ]
-      set selected-car one-of turtles-on patch mx my
-      ask selected-car [ set color red ]
-      display
-    ]
-  ]
-end
-
-to-report car-color
-  ; give all cars a blueish color, but still make them distinguishable
-  report one-of [ blue cyan sky ] + 1.5 + random-float 1.0
-end
-
-to-report number-of-lanes
-  ; To make the number of lanes easily adjustable, remove this
-  ; reporter and create a slider on the interface with the same
-  ; name. 8 lanes is the maximum that currently fit in the view.
-  report banen
+to iplus
+  ask turtles with [xcor = -60] [setxy -59 -12 + i * 5
+  set i i + 1
+  set heading 90]
+  ask turtles with [xcor = 60] [setxy 59 -12 + i * 5
+  set i i + 1
+  set heading -90]
 end
 
 
-; Copyright 1998 Uri Wilensky.
-; See Info tab for full copyright and license.
+;The end :D
 @#$#@#$#@
 GRAPHICS-WINDOW
-0
+210
 10
-1898
-349
+1791
+539
 -1
 -1
-10.0
+13.0
 1
 10
 1
@@ -211,25 +105,25 @@ GRAPHICS-WINDOW
 1
 0
 1
+1
+1
+-60
+60
+-19
+20
 0
-1
--94
-94
--16
-16
-1
-1
+0
 1
 ticks
 30.0
 
 BUTTON
-15
-610
-80
-645
+0
+486
+210
+519
 NIL
-setup
+Setup
 NIL
 1
 T
@@ -241,11 +135,11 @@ NIL
 1
 
 BUTTON
-160
-620
-225
-655
-go
+0
+519
+210
+552
+NIL
 go
 T
 1
@@ -255,175 +149,108 @@ NIL
 NIL
 NIL
 NIL
-0
-
-BUTTON
-85
-605
-150
-640
-go once
-go
-NIL
 1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-0
-
-BUTTON
-270
-605
-475
-638
-select car
-select-car
-T
-1
-T
-OBSERVER
-NIL
-NIL
-NIL
-NIL
-0
-
-MONITOR
-245
-555
-330
-600
-mean speed
-mean [speed] of turtles
-2
-1
-11
 
 SLIDER
-300
-660
-505
-693
-number-of-cars
-number-of-cars
-1
-number-of-lanes * world-width
-1701.0
-1
-1
-NIL
-HORIZONTAL
-
-PLOT
-305
-385
-675
-560
-Car Speeds
-Time
-Speed
-0.0
-300.0
-0.0
-0.5
-true
-true
-"" ""
-PENS
-"average" 1.0 0 -10899396 true "" "plot mean [ speed ] of turtles"
-"max" 1.0 0 -11221820 true "" "plot max [ speed ] of turtles"
-"min" 1.0 0 -13345367 true "" "plot min [ speed ] of turtles"
-"selected-car" 1.0 0 -2674135 true "" "plot [ speed ] of selected-car"
-
-SLIDER
-275
-700
-480
-733
-acceleration
-acceleration
-0.001
-0.01
-0.005
-0.001
-1
-NIL
-HORIZONTAL
-
-SLIDER
-245
-735
-450
-768
-deceleration
-deceleration
-0.01
-0.1
-0.02
-0.01
-1
-NIL
-HORIZONTAL
-
-PLOT
-685
-385
-1055
-560
-Driver Patience
-Time
-Patience
-0.0
-10.0
-0.0
-10.0
-true
-true
-"" ""
-PENS
-"average" 1.0 0 -10899396 true "" "plot mean [ patience ] of turtles"
-"max" 1.0 0 -11221820 true "" "plot max [ patience ] of turtles"
-"min" 1.0 0 -13345367 true "" "plot min [ patience ] of turtles"
-"selected car" 1.0 0 -2674135 true "" "plot [patience] of selected-car"
-
-MONITOR
-120
-560
-240
-605
-selected car speed
-[ speed ] of selected-car
-2
-1
-11
-
-PLOT
+0
 10
-386
-300
-561
-Cars Per Lane
-Time
-Cars
-0.0
-0.0
-0.0
-0.0
-true
-true
-"set-plot-y-range (floor (count turtles * 0.4)) (ceiling (count turtles * 0.6))\nforeach range length lanes [ i ->\n  create-temporary-plot-pen (word (i + 1))\n  set-plot-pen-color item i base-colors\n]" "foreach range length lanes [ i ->\n  set-current-plot-pen (word (i + 1))\n  plot count turtles with [ round ycor = item i lanes ]\n]"
-PENS
+210
+43
+Aantal-treinen
+Aantal-treinen
+1
+10
+1.0
+1
+1
+NIL
+HORIZONTAL
 
 SLIDER
-515
-725
-720
-758
-max-patience
-max-patience
+0
+43
+210
+76
+Aantal-rijen-per-trein
+Aantal-rijen-per-trein
+1
+40
+1.0
+1
+1
+NIL
+HORIZONTAL
+
+INPUTBOX
+0
+229
+210
+289
+Tijd-tot-trein-terug-is
+0.0
+1
+0
+Number
+
+SLIDER
+0
+76
+210
+109
+Aantal-zitplekken-per-rij
+Aantal-zitplekken-per-rij
+1
+10
+1.0
+1
+1
+NIL
+HORIZONTAL
+
+INPUTBOX
+0
+109
+210
+169
+Minimale-vrijgave-tijd
+0.0
+1
+0
+Number
+
+INPUTBOX
+0
+169
+210
+229
+Maximale-vrijgave-tijd
+0.0
+1
+0
+Number
+
+SLIDER
+0
+289
+210
+322
+kans-standby-rij
+kans-standby-rij
+1
+100
+30.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+0
+322
+210
+355
+kans-dubbel-standby
+kans-dubbel-standby
 1
 100
 50.0
@@ -432,22 +259,192 @@ max-patience
 NIL
 HORIZONTAL
 
-SLIDER
-675
-655
-847
-688
-Banen
-Banen
+SWITCH
+0
+355
+210
+388
+Fastpass?
+Fastpass?
+0
 1
-14
-10.0
+-1000
+
+SLIDER
+0
+388
+210
+421
+kans-fastpass-rij
+kans-fastpass-rij
+1
+100
+25.0
 1
 1
 NIL
 HORIZONTAL
 
+SLIDER
+0
+421
+210
+454
+kans-dubbel-fastpass
+kans-dubbel-fastpass
+1
+100
+25.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+0
+454
+210
+487
+om-hoeveel-standby-fastpass
+om-hoeveel-standby-fastpass
+1
+100
+5.0
+1
+1
+NIL
+HORIZONTAL
+
+MONITOR
+0
+552
+211
+597
+Aantal mensen in standby rij
+standby-rij
+1
+1
+11
+
+MONITOR
+0
+597
+211
+642
+NIL
+Aantal mensen in fastpass rij
+17
+1
+11
+
+MONITOR
+0
+642
+211
+687
+Aankomst volgende trein
+volgende-trein
+1
+1
+11
+
+MONITOR
+0
+687
+211
+732
+Vorige vrijgave tijd
+vrijgave-tijd
+1
+1
+11
+
+PLOT
+211
+552
+1008
+777
+Mensen in rij
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"Totaal" 1.0 0 -1184463 true "" "plot count turtles with [rij = \"standby\"] + count turtles with [rij = \"fastpass\"]"
+"Standby" 1.0 0 -13791810 true "" "plot count turtles with [rij = \"standby\"]"
+"Fastpass" 1.0 0 -2674135 true "" "plot count turtles with [rij = \"fastpass\"]"
+
+MONITOR
+0
+732
+211
+777
+Gemiddelde vrijgave tijd
+vrijgave-gemiddeld
+1
+1
+11
+
+PLOT
+1008
+552
+1791
+777
+Vrijgave tijd
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"Tijd" 1.0 0 -2674135 true "" "Vrijgave-tijd"
+"Gemiddeld" 1.0 0 -14439633 true "" "Vrijgave-gemiddeld"
+
 @#$#@#$#@
+## WHAT IS IT?
+
+(a general understanding of what the model is trying to show or explain)
+
+## HOW IT WORKS
+
+(what rules the agents use to create the overall behavior of the model)
+
+## HOW TO USE IT
+
+(how to use the model, including a description of each of the items in the Interface tab)
+
+## THINGS TO NOTICE
+
+(suggested things for the user to notice while running the model)
+
+## THINGS TO TRY
+
+(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+
+## EXTENDING THE MODEL
+
+(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
+
+## NETLOGO FEATURES
+
+(interesting or unusual features of NetLogo that the model uses, particularly in the Code tab; or where workarounds were needed for missing features)
+
+## RELATED MODELS
+
+(models in the NetLogo Models Library and elsewhere which are of related interest)
+
+## CREDITS AND REFERENCES
+
+(a reference to the model's URL on the web if it has one, as well as any other necessary credits, citations, and links)
 @#$#@#$#@
 default
 true
@@ -641,6 +638,22 @@ Polygon -7500403 true true 135 105 90 60 45 45 75 105 135 135
 Polygon -7500403 true true 165 105 165 135 225 105 255 45 210 60
 Polygon -7500403 true true 135 90 120 45 150 15 180 45 165 90
 
+sheep
+false
+15
+Circle -1 true true 203 65 88
+Circle -1 true true 70 65 162
+Circle -1 true true 150 105 120
+Polygon -7500403 true false 218 120 240 165 255 165 278 120
+Circle -7500403 true false 214 72 67
+Rectangle -1 true true 164 223 179 298
+Polygon -1 true true 45 285 30 285 30 240 15 195 45 210
+Circle -1 true true 3 83 150
+Rectangle -1 true true 65 221 80 296
+Polygon -1 true true 195 285 210 285 210 240 240 210 195 210
+Polygon -7500403 true false 276 85 285 105 302 99 294 83
+Polygon -7500403 true false 219 85 210 105 193 99 201 83
+
 square
 false
 0
@@ -725,6 +738,13 @@ Line -7500403 true 40 84 269 221
 Line -7500403 true 40 216 269 79
 Line -7500403 true 84 40 221 269
 
+wolf
+false
+0
+Polygon -16777216 true false 253 133 245 131 245 133
+Polygon -7500403 true true 2 194 13 197 30 191 38 193 38 205 20 226 20 257 27 265 38 266 40 260 31 253 31 230 60 206 68 198 75 209 66 228 65 243 82 261 84 268 100 267 103 261 77 239 79 231 100 207 98 196 119 201 143 202 160 195 166 210 172 213 173 238 167 251 160 248 154 265 169 264 178 247 186 240 198 260 200 271 217 271 219 262 207 258 195 230 192 198 210 184 227 164 242 144 259 145 284 151 277 141 293 140 299 134 297 127 273 119 270 105
+Polygon -7500403 true true -1 195 14 180 36 166 40 153 53 140 82 131 134 133 159 126 188 115 227 108 236 102 238 98 268 86 269 92 281 87 269 103 269 113
+
 x
 false
 0
@@ -748,5 +768,5 @@ true
 Line -7500403 true 150 150 90 180
 Line -7500403 true 150 150 210 180
 @#$#@#$#@
-1
+0
 @#$#@#$#@
