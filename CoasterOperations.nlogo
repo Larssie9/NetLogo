@@ -2,8 +2,9 @@ globals [
   fastpass-color
   even
   uneven
-  kans-standby
-  random-standby
+  standby-aantal
+  tlist
+  t
 ]
 turtles-own [
  i
@@ -13,6 +14,7 @@ turtles-own [
 
 to setup
   clear-all
+  set tlist (list 5 10)
   set fastpass-color (list -19 -18 -17 -16 -15)
   ask patches [set pcolor brown + random-float 0.25]
   foreach fastpass-color [ n -> ask patches with [pycor = n] [set pcolor red + random-float 0.25]]
@@ -37,35 +39,31 @@ to setup
 end
 
 to go
-  set kans-standby 100 / kans-standby-rij
-  set random-standby random kans-standby
-  if random-standby < 1 [
-  create-turtles 1 [
-    set color green
-    setxy 59 -12
-    set i 1
-    set rij "standby"
-  ]
-  ]
+  spawn
   foreach even [n ->
   ask turtles with [i = n] [move-forward1]
   ]
   foreach uneven [n ->
   ask turtles with [i = n] [move-forward2]
   ]
+  ask turtles with [rij = "fastpass"] [move-forward3]
   iplus
   wait 0.1
-  tick
+  set t t + 1
+  if t = 10 [
+    set t 1
+    tick
+  ]
 end
 
 to move-forward1
   set heading -90
-  let blocking-guests other turtles in-cone (1) 180 with [ i = i ]
+  let blocking-guests other turtles in-cone (0.5) 180 with [ i = i ]
   let blocking-guest min-one-of blocking-guests [ distance myself]
   ifelse blocking-guest != nobody [
     set speed 0
   ][set speed 1]
-  forward 1
+  forward speed
 end
 
 to move-forward2
@@ -75,16 +73,80 @@ to move-forward2
   ifelse blocking-guest != nobody [
     set speed 0
   ][set speed 1]
-  forward 1
+  forward speed
+end
+
+to move-forward3
+  set heading -90
+  let blocking-guests other turtles in-cone (1) 180 with [ i = i ]
+  let blocking-guest min-one-of blocking-guests [ distance myself]
+  ifelse blocking-guest != nobody [
+    set speed 0
+  ][set speed 1]
+  forward speed
 end
 
 to iplus
-  ask turtles with [xcor = -60] [setxy -59 -12 + i * 5
+  ask turtles with [(xcor = -60) AND (rij ="standby")] [setxy -59 -12 + i * 5
   set i i + 1
   set heading 90]
-  ask turtles with [xcor = 60] [setxy 59 -12 + i * 5
+  ask turtles with [(xcor = 60) AND (rij ="standby")] [setxy 59 -12 + i * 5
   set i i + 1
   set heading -90]
+end
+
+to spawn
+foreach tlist [ n -> if n = t [
+  let kans-standby-dubbel 100 / kans-dubbel-standby
+  let random-dubbel-standby random kans-standby-dubbel
+  let kans-standby 100 / kans-standby-rij
+  let random-standby random kans-standby
+    if random-standby < 1 [
+      create-turtles 1 [
+        set color green
+        setxy 59 -12
+        set i 1
+        set rij "standby"
+        set speed 1
+      ]
+      if random-dubbel-standby < 1 [
+        create-turtles 1 [
+          set color green
+          setxy 57.5 -12
+          set i 1
+          set rij "standby"
+          set speed 1
+        ]
+      ]
+    ]
+    if fastpass? [
+      let kans-fastpass-dubbel 100 / kans-dubbel-fastpass
+      let random-dubbel-fastpass random kans-fastpass-dubbel
+      let kans-fastpass 100 / kans-fastpass-rij
+      let random-fastpass random kans-fastpass
+      if random-fastpass < 1 [
+        create-turtles 1 [
+          set color green
+          setxy 59 -17
+          set rij "fastpass"
+          set speed 1
+        ]
+        if random-dubbel-fastpass < 1 [
+          create-turtles 1 [
+            set color green
+            setxy 57.5 -17
+            set rij "fastpass"
+            set speed 1
+          ]
+        ]
+      ]
+    ]
+  ]
+]
+end
+
+to destroy
+  ask turtles with [xcor <= -59.5] [ die ]
 end
 
 
@@ -238,7 +300,7 @@ kans-standby-rij
 kans-standby-rij
 1
 100
-30.0
+75.0
 1
 1
 NIL
@@ -321,7 +383,7 @@ MONITOR
 211
 597
 Aantal mensen in standby rij
-standby-rij
+count turtles with [rij = \"standby\"]
 1
 1
 11
@@ -331,8 +393,8 @@ MONITOR
 597
 211
 642
-NIL
 Aantal mensen in fastpass rij
+count turtles with [rij = \"fastpass\"]
 17
 1
 11
