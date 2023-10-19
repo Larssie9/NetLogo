@@ -13,6 +13,7 @@ globals [
   previousvrijgavetijd
   gemiddeldevrijgavetijd
   vrijgaves
+  terugkeer
   t
   inStation?
   s
@@ -29,6 +30,7 @@ end
 
 to setup
   clear-all
+  set terugkeer (list)
   set vrijgaves -1
   set previousvrijgavetijd 0
   set rijdendetreinen 0
@@ -76,6 +78,7 @@ to go
   if t = 10 [
     set tempvrijgavetijd tempvrijgavetijd - 1
     set t 1
+    treinterugkeer
     tick
   ]
 end
@@ -208,6 +211,10 @@ to vrijgave
     set tempvrijgavetijd Minimale-vrijgave-tijd + random deltavrijgavetijd
     set previousvrijgavetijd tempvrijgavetijd
   ]
+end
+
+to treinterugkeer
+  foreach terugkeer [n -> show n]
 end
 
 ;The end :D
