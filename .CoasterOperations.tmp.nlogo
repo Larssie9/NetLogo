@@ -16,6 +16,7 @@ globals [
   terugkeer
   t
   inStation?
+  vrijgavedelay?
   s
 ]
 turtles-own [
@@ -30,6 +31,8 @@ end
 
 to setup
   clear-all
+  set vrijgavedelay? false
+  set tempvrijgavetijd 1
   set terugkeer (list)
   set vrijgaves -1
   set previousvrijgavetijd 0
@@ -63,7 +66,7 @@ end
 to go
   spawn
   destroy
-  treinen
+
   vrijgave
   foreach even [n ->
   ask turtles with [(i = n) AND (xcor >= -59)] [move-forward1]
@@ -73,14 +76,14 @@ to go
   ]
   ask turtles with [(rij = "fastpass") AND (xcor >= -59)] [move-forward3]
   iplus
-  wait 0.1
   set t t + 1
-  if t = 10 [
+  if t = 100 [
     set tempvrijgavetijd tempvrijgavetijd - 1
     set t 1
     treinterugkeer
-    tick
   ]
+  wait 0.01
+  tick-advance 0.01
 end
 
 to move-forward1
@@ -89,7 +92,7 @@ to move-forward1
   let blocking-guest min-one-of blocking-guests [ distance myself]
   ifelse blocking-guest != nobody [
     set speed 0
-  ][set speed 1]
+  ][set speed 0.5]
   forward speed
 end
 
@@ -99,7 +102,7 @@ to move-forward2
   let blocking-guest min-one-of blocking-guests [ distance myself]
   ifelse blocking-guest != nobody [
     set speed 0
-  ][set speed 1]
+  ][set speed 0.5]
   forward speed
 end
 
@@ -109,15 +112,15 @@ to move-forward3
   let blocking-guest min-one-of blocking-guests [ distance myself]
   ifelse blocking-guest != nobody [
     set speed 0
-  ][set speed 1]
+  ][set speed 0.5]
   forward speed
 end
 
 to iplus
-  ask turtles with [(xcor = -60) AND (rij ="standby") AND (i != 7)] [setxy -59 -12 + i * 5
+  ask turtles with [(xcor = -59) AND (rij ="standby") AND (i != 7)] [setxy -58 -12 + i * 5
   set i i + 1
   set heading 90]
-  ask turtles with [(xcor = 60) AND (rij ="standby") AND (i != 7)] [setxy 59 -12 + i * 5
+  ask turtles with [(xcor = 59) AND (rij ="standby") AND (i != 7)] [setxy 58 -12 + i * 5
   set i i + 1
   set heading -90]
 end
@@ -182,17 +185,18 @@ end
 
 to destroy
   if (inStation? = true) [
-  ask turtles with [(xcor <= -59.5)] [ die ]
+  ask turtles with [(xcor < -59)] [ die ]
   ]
   if (inStation? = false) [
-  ask turtles with [(xcor <= -59.5)] [set speed 0]
+  ask turtles with [(xcor < -59)] [set speed 0]
   ]
 end
 
 to treinen
+  show wachtendetreinen
   set wachtendetreinen wachtendetreinen - rijdendetreinen
   if (wachtendetreinen >= 1) [
-    set inStation? true
+    set inStation? false
   ]
   if (wachtendetreinen = 0) [
     set inStation? true
@@ -201,15 +205,17 @@ end
 
 to vrijgave
   set deltavrijgavetijd Maximale-vrijgave-tijd - Minimale-vrijgave-tijd
-  if ((tempvrijgavetijd < 0) AND (tempvrijgavetijd > -1) [
-    set vrijgaves vrijgaves + 1
-    set rijdendetreinen rijdendetreinen + 1
+  if ((tempvrijgavetijd <= 0) AND ((tempvrijgavetijd > -1) AND (vrijgavedelay? = false))) [
+    set vrijgavedelay? true
     set vrijgavetijd previousvrijgavetijd
     if (vrijgaves > 0) [
       set gemiddeldevrijgavetijd (gemiddeldevrijgavetijd + previousvrijgavetijd) / vrijgaves
     ]
     set tempvrijgavetijd Minimale-vrijgave-tijd + random deltavrijgavetijd
     set previousvrijgavetijd tempvrijgavetijd
+    set vrijgaves vrijgaves + 1
+    set rijdendetreinen rijdendetreinen + 1
+    set vrijgavedelay? false
   ]
 end
 
@@ -353,7 +359,7 @@ INPUTBOX
 210
 229
 Maximale-vrijgave-tijd
-10.0
+20.0
 1
 0
 Number
