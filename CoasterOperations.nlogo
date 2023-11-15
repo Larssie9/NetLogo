@@ -9,6 +9,7 @@ globals [
   tempvrijgavetijd
   deltavrijgavetijd
   rijdendetreinentijd
+  tempaankomsttijd
   vrijgavetijd
   previousvrijgavetijd
   gemiddeldevrijgavetijd
@@ -17,6 +18,7 @@ globals [
   t
   inStation?
   vrijgavedelay?
+  treindelay?
   s
 ]
 turtles-own [
@@ -60,6 +62,7 @@ to setup
   ]
   set even (list 1 3 5 7 10)
   set uneven (list 2 4 6 8)
+  treinen
   reset-ticks
 end
 
@@ -68,16 +71,18 @@ to go
   destroy
   vrijgave
   foreach even [n ->
-  ask turtles with [(i = n) AND (xcor >= -59)] [move-forward1]
+  ask turtles with [(i = n) AND (xcor > -59)] [move-forward1]
   ]
   foreach uneven [n ->
-  ask turtles with [(i = n)  AND (xcor >= -59)] [move-forward2]
+  ask turtles with [(i = n)  AND (xcor > -59)] [move-forward2]
   ]
   ask turtles with [(rij = "fastpass") AND (xcor >= -59)] [move-forward3]
   iplus
   set t t + 1
   if t = 100 [
+    if (inStation? = true) [
     set tempvrijgavetijd tempvrijgavetijd - 1
+    ]
     set t 1
     treinterugkeer
   ]
@@ -116,12 +121,30 @@ to move-forward3
 end
 
 to iplus
-  ask turtles with [(xcor = -59) AND (rij ="standby") AND (i != 7)] [setxy -58 -12 + i * 5
-  set i i + 1
-  set heading 90]
-  ask turtles with [(xcor = 59) AND (rij ="standby") AND (i != 7)] [setxy 58 -12 + i * 5
-  set i i + 1
-  set heading -90]
+  ask turtles with [(xcor = -59) AND (rij ="standby") AND (i != 7)] [set heading 0
+  let blocking-guests other turtles in-cone (2) 180 with [ i = i ]
+  let blocking-guest min-one-of blocking-guests [ distance myself]
+  ifelse blocking-guest != nobody [
+    set speed 0
+  ][set speed 0.5]
+  forward speed
+  if (ycor >= -12 + i * 5) [
+      set i i + 1
+      setxy -58 -17 + i * 5
+    ]
+  ]
+  ask turtles with [(xcor = 59) AND (rij ="standby") AND (i != 7)] [set heading 0
+  let blocking-guests other turtles in-cone (2) 180 with [ i = i ]
+  let blocking-guest min-one-of blocking-guests [ distance myself]
+  ifelse blocking-guest != nobody [
+    set speed 0
+  ][set speed 0.5]
+  forward speed
+  if (ycor >= -12 + i * 5) [
+      set i i + 1
+      setxy -58 -17 + i * 5
+    ]
+  ]
 end
 
 to spawn
@@ -184,37 +207,44 @@ end
 
 to destroy
   if (inStation? = true) [
-  ask turtles with [(xcor < -59)] [ die ]
+  ask turtles with [(xcor < -60)] [ die ]
   ]
   if (inStation? = false) [
-  ask turtles with [(xcor < -59)] [set speed 0]
+  ask turtles with [(xcor < -60)] [set speed 0]
   ]
 end
 
 to treinen
-  show wachtendetreinen
-  set wachtendetreinen wachtendetreinen - rijdendetreinen
+  set wachtendetreinen aantal-treinen - rijdendetreinen
   if (wachtendetreinen >= 1) [
-    set inStation? false
-  ]
-  if (wachtendetreinen = 0) [
     set inStation? true
   ]
+  if (wachtendetreinen = 0) [
+    set inStation? false
+  ]
+  show wachtendetreinen
 end
 
 to vrijgave
   set deltavrijgavetijd Maximale-vrijgave-tijd - Minimale-vrijgave-tijd
+  if (tempvrijgavetijd > 0) [
+    set treindelay? true
+  ]
   if (tempvrijgavetijd <= 0) [
-    set vrijgavedelay? true
+    if (treindelay? = true) [
+      set treindelay? false
+      treinen
+      set rijdendetreinen rijdendetreinen + 1
+    ]
     set vrijgavetijd previousvrijgavetijd
     if (vrijgaves > 0) [
       set gemiddeldevrijgavetijd (gemiddeldevrijgavetijd + previousvrijgavetijd) / vrijgaves
     ]
-    set tempvrijgavetijd Minimale-vrijgave-tijd + random deltavrijgavetijd
+    if (inStation? = true) [
+      set tempvrijgavetijd Minimale-vrijgave-tijd + random deltavrijgavetijd
+    ]
     set previousvrijgavetijd tempvrijgavetijd
     set vrijgaves vrijgaves + 1
-    set rijdendetreinen rijdendetreinen + 1
-    treinen
   ]
 end
 
@@ -372,7 +402,7 @@ kans-standby-rij
 kans-standby-rij
 1
 100
-75.0
+76.0
 1
 1
 NIL
@@ -477,7 +507,7 @@ MONITOR
 211
 687
 Aankomst volgende trein
-tempvrijgavetijd
+tempaankomsttijd
 1
 1
 11
@@ -487,8 +517,8 @@ MONITOR
 687
 211
 732
-Vorige vrijgave tijd
-vrijgavetijd
+Tijd to volgende vrijgave
+tempvrijgavetijd
 1
 1
 11
@@ -523,23 +553,6 @@ gemiddeldevrijgavetijd
 1
 1
 11
-
-PLOT
-1008
-552
-1791
-777
-Vrijgave tijd
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-true
-"" ""
-PENS
 
 @#$#@#$#@
 ## WHAT IS IT?
