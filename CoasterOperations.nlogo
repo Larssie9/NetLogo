@@ -23,6 +23,8 @@ globals [
   treindelay?
   doorgelaten
   treinnummer
+  stand-by
+  totaal
   s
   b
 ]
@@ -92,6 +94,7 @@ to go
     set tempvrijgavetijd tempvrijgavetijd - 1
     ]
     set t 1
+    update-plots
   ]
   tick-advance 0.001
   destroy
@@ -213,11 +216,36 @@ foreach tlist [ n -> if n = t [
 end
 
 to destroy
+  show stand-by
   if (inStation? = true) [
-    ask turtles with [(xcor <= -59.5) AND (rij = "fastpass") AND (doorgelaten != Capaciteit-per-trein)] [ set doorgelaten doorgelaten + 1 ; die voor fast-pass
-    die ]
-    ask turtles with [(xcor <= -59) AND (i = 7) AND (doorgelaten != Capaciteit-per-trein) ] [ set doorgelaten doorgelaten + 1 ;die voor stand-by
-    die ]
+    if (doorgelaten != Capaciteit-per-trein) [
+      ifelse (stand-by >= om-hoeveel-standby-fastpass) [
+        ask turtles with [(xcor <= -59.5) AND (rij = "fastpass")] [ set doorgelaten doorgelaten + 1 ; die voor fast-pass
+          set stand-by 0
+          set totaal totaal + 1
+          die
+        ]
+      ] [ if (count turtles with [(xcor < 0) AND (rij = "standby") AND (i = 7)] = 0) [
+        ask turtles with [(xcor <= -59.5) AND (rij = "fastpass")] [ set doorgelaten doorgelaten + 1
+          set stand-by 0
+          set totaal totaal + 1
+          die
+      ]]]
+    ]
+    if (doorgelaten != Capaciteit-per-trein) [
+      ifelse (stand-by < om-hoeveel-standby-fastpass) [
+        ask turtles with [(xcor <= -59) AND (i = 7) ] [set doorgelaten doorgelaten + 1 ;die voor stand-by
+        set stand-by stand-by + 1
+        set totaal totaal + 1
+        die
+        ]
+      ] [ if (count turtles with [(xcor < 0) AND (rij = "fastpass")] = 0) [
+        ask turtles with [(xcor <= -59) AND (i = 7)] [ set doorgelaten doorgelaten + 1
+        set stand-by stand-by + 1
+        set totaal totaal + 1
+        die
+      ]]]
+  ]
   ]
   if (inStation? = false) [
     ask turtles with [(xcor <= -59.5)] [set speed 0]
@@ -232,7 +260,6 @@ to treinen
   if (wachtendetreinen = 0) [
     set inStation? false
   ]
-  show wachtendetreinen
 end
 
 to vrijgave
@@ -241,17 +268,15 @@ to vrijgave
     set doorgelaten 0
     set rijdendetreinen rijdendetreinen + 1
     set terugkeer lput Tijd-tot-trein-terug-is terugkeer
-    set vrijgavetijd previousvrijgavetijd
+    set vrijgavetijd vrijgavetijd + previousvrijgavetijd
+    set vrijgaves vrijgaves + 1
     if (vrijgaves > 0) [
-      ifelse (vrijgaves != 1) [
-        set gemiddeldevrijgavetijd (gemiddeldevrijgavetijd + previousvrijgavetijd) / 2
-      ] [set gemiddeldevrijgavetijd previousvrijgavetijd]
+    set gemiddeldevrijgavetijd vrijgavetijd / vrijgaves
     ]
     if (inStation? = true) [
       set tempvrijgavetijd Minimale-vrijgave-tijd + random deltavrijgavetijd
     ]
     set previousvrijgavetijd tempvrijgavetijd
-    set vrijgaves vrijgaves + 1
   ]
 end
 
@@ -298,9 +323,9 @@ ticks
 
 BUTTON
 0
-486
+453
 210
-519
+486
 NIL
 Setup
 NIL
@@ -315,9 +340,9 @@ NIL
 
 BUTTON
 0
-519
+486
 210
-552
+519
 NIL
 go
 T
@@ -339,7 +364,7 @@ Aantal-treinen
 Aantal-treinen
 1
 10
-5.0
+2.0
 1
 1
 NIL
@@ -354,7 +379,7 @@ Capaciteit-per-trein
 Capaciteit-per-trein
 1
 60
-1.0
+20.0
 1
 1
 NIL
@@ -362,57 +387,42 @@ HORIZONTAL
 
 INPUTBOX
 0
-229
+196
 210
-289
+256
 Tijd-tot-trein-terug-is
-15.0
+60.0
 1
 0
 Number
 
-SLIDER
+INPUTBOX
 0
 76
 210
-109
-Aantal-zitplekken-per-rij
-Aantal-zitplekken-per-rij
-1
-10
-1.0
-1
-1
-NIL
-HORIZONTAL
-
-INPUTBOX
-0
-109
-210
-169
+136
 Minimale-vrijgave-tijd
-10.0
+40.0
 1
 0
 Number
 
 INPUTBOX
 0
-169
+136
 210
-229
+196
 Maximale-vrijgave-tijd
-10.0
+60.0
 1
 0
 Number
 
 SLIDER
 0
-289
+256
 210
-322
+289
 kans-standby-rij
 kans-standby-rij
 1
@@ -425,9 +435,9 @@ HORIZONTAL
 
 SLIDER
 0
-322
+289
 210
-355
+322
 kans-dubbel-standby
 kans-dubbel-standby
 1
@@ -440,9 +450,9 @@ HORIZONTAL
 
 SWITCH
 0
-355
+322
 210
-388
+355
 Fastpass?
 Fastpass?
 0
@@ -451,14 +461,14 @@ Fastpass?
 
 SLIDER
 0
-388
+355
 210
-421
+388
 kans-fastpass-rij
 kans-fastpass-rij
 1
 100
-50.0
+25.0
 1
 1
 NIL
@@ -466,9 +476,9 @@ HORIZONTAL
 
 SLIDER
 0
-421
+388
 210
-454
+421
 kans-dubbel-fastpass
 kans-dubbel-fastpass
 1
@@ -481,14 +491,14 @@ HORIZONTAL
 
 SLIDER
 0
-454
+421
 210
-487
+454
 om-hoeveel-standby-fastpass
 om-hoeveel-standby-fastpass
 1
 100
-5.0
+10.0
 1
 1
 NIL
@@ -496,9 +506,9 @@ HORIZONTAL
 
 MONITOR
 0
-552
+519
 211
-597
+564
 Aantal mensen in standby rij
 count turtles with [rij = \"standby\"]
 1
@@ -507,9 +517,9 @@ count turtles with [rij = \"standby\"]
 
 MONITOR
 0
-597
+564
 211
-642
+609
 Aantal mensen in fastpass rij
 count turtles with [rij = \"fastpass\"]
 17
@@ -518,9 +528,9 @@ count turtles with [rij = \"fastpass\"]
 
 MONITOR
 0
-642
+609
 211
-687
+654
 Aankomst volgende treinen
 terugkeer
 1
@@ -529,9 +539,9 @@ terugkeer
 
 MONITOR
 0
-687
+654
 211
-732
+699
 Tijd to volgende vrijgave
 tempvrijgavetijd
 1
@@ -540,9 +550,9 @@ tempvrijgavetijd
 
 PLOT
 211
-552
-1008
-777
+538
+775
+744
 Mensen in rij
 NIL
 NIL
@@ -552,7 +562,7 @@ NIL
 10.0
 true
 true
-"" "spawn"
+"" ""
 PENS
 "Totaal" 1.0 0 -1184463 true "" "plot count turtles with [rij = \"standby\"] + count turtles with [rij = \"fastpass\"]"
 "Standby" 1.0 0 -13791810 true "" "plot count turtles with [rij = \"standby\"]"
@@ -560,14 +570,52 @@ PENS
 
 MONITOR
 0
-732
+699
 211
-777
+744
 Gemiddelde vrijgave tijd
 gemiddeldevrijgavetijd
 1
 1
 11
+
+PLOT
+1281
+538
+1791
+744
+Vrijgavetijd
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"Vrijgavetijd" 1.0 0 -16777216 true "" "plot previousvrijgavetijd"
+"Gemiddelde vrijgavetijd" 1.0 0 -13840069 true "" "plot gemiddeldevrijgavetijd"
+
+PLOT
+775
+540
+1281
+744
+Mensen in attractie
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+true
+"" ""
+PENS
+"Totaal" 1.0 0 -8630108 true "" "plot totaal"
+"Huidige trein" 1.0 0 -2064490 true "" "plot doorgelaten"
 
 @#$#@#$#@
 ## WHAT IS IT?
