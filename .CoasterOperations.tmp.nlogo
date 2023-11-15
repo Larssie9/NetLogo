@@ -257,13 +257,15 @@ end
 
 to treinterugkeer
   foreach terugkeer [n ->
+
+  ifelse (treinnummer != 0) [set treinnummer treinnummer - 1][set treinnummer rijdendetreinen - 1]
+  ]
   let tempterugkeer n - 1
   ifelse (tempterugkeer != 0) [set terugkeer replace-item treinnummer terugkeer tempterugkeer]
   [if (rijdendetreinen > 0) [
       set terugkeer but-first terugkeer
       set rijdendetreinen rijdendetreinen - 1]
   ]
-  ifelse (treinnummer != 0) [set treinnummer treinnummer - 1][set treinnummer rijdendetreinen - 1]
   ]
 end
 
