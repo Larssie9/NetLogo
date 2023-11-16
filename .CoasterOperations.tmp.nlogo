@@ -283,7 +283,7 @@ to treinterugkeer
     ifelse (tempterugkeer != 0) [set terugkeer replace-item treinnummer terugkeer tempterugkeer
     ifelse (treinnummer != rijdendetreinen - 1) [set treinnummer treinnummer + 1] ;spot neerzetten
     [set treinnummer 0]]
-    [if (rijdendetreinen > 0) [ ;verwerken als treinen terugkeren
+    [if (rijdendetreinen > 0) [
       set terugkeer but-first terugkeer
       set rijdendetreinen rijdendetreinen - 1
       ]
